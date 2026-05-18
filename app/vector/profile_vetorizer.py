@@ -1,38 +1,46 @@
+import json
+from types import SimpleNamespace
+import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-import json
-import numpy as np
-from types import SimpleNamespace
 
+# 1. Inicialização e Processamento do Corpus (Feito apenas uma vez)
 embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 corpus = []
-profiles_corpus = []
-with open('profiles.json' , 'r') as file :
-    profiles_corpus = (json.load(file,object_hook=lambda to_dic: SimpleNamespace(**to_dic)))
-
+with open("profiles.json", "r") as file:
+    profiles_corpus = json.load(
+        file, object_hook=lambda to_dic: SimpleNamespace(**to_dic)
+    )
 
 for profile in profiles_corpus:
-    corpus.append({
-         'name' : profile.name ,
-         'message' : profile.message 
-        })
+    corpus.append({"name": profile.name, "message": profile.message})
 
-only_message = []
-for item in corpus:
-    only_message.append(item['message'])
+only_message = [item["message"] for item in corpus]
+embedding_corpus = embedder.encode(only_message)
 
-emdding_corpuse = embedder.encode(only_message)
 
-query = ["boa tarde vi o anuncio do imovel, gostaria sabe se ta valendo ainda quero visitar"]
+# 2. A Função de Busca
+def buscar_similaridade(query: str) -> dict:
+    """Recebe uma string de consulta e retorna um dicionário com o índice
 
-vactor_query = embedder.encode(query)
-l2 = cosine_similarity(vactor_query,emdding_corpuse)
+    do corpus e a mensagem correspondente, ordenados por relevância.
+    """
+    # Garante que a query esteja em formato de lista para o embedder
+    vector_query = embedder.encode([query])
 
-similarity = l2[0]
-similarity_ordem_decrecente = np.argsort(similarity)[::-1]
+    # Calcula a similaridade
+    l2 = cosine_similarity(vector_query, embedding_corpus)
+    similarity = l2[0]
 
-print("queri : ",query)
-for i in similarity_ordem_decrecente :
+    # Ordena os índices do maior para o menor
+    similarity_ordem_decrecente = np.argsort(similarity)[::-1]
+
+    # Cria o dicionário de retorno filtrando pelo limiar (threshold) de 0.1
+    resultado = []
+    for i in similarity_ordem_decrecente:
         if similarity[i] > 0.1:
-            print(f"{similarity[i]:.2f} | {only_message[i]}")
+            # Usa o índice 'i' como chave e a mensagem correspondente como valor
+            resultado.append(f'{similarity[i]:.2f} -> {only_message[i]}')
+
+    return resultado

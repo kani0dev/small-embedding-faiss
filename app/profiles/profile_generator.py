@@ -1,5 +1,6 @@
 from faker import Faker 
 from faker.providers import profile
+
 import json, csv
 
 fake = Faker()
