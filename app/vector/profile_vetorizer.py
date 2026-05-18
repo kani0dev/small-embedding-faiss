@@ -20,11 +20,7 @@ query = ["eu gosto muito de carros"]
 query_vector = embedder.encode(query)
 
 similaridade = cosine_similarity(query_vector, corpus_embedding)
-
-# similaridade tem shape (1, 8) — 1 query, 8 frases do corpus
 scores = similaridade[0]  # pega o array da primeira (e única) query
-
-# ordena do mais similar pro menos
 indices_ordenados = np.argsort(scores)[::-1]
 
 for i in indices_ordenados:
